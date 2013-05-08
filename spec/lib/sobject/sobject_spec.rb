@@ -141,16 +141,33 @@ describe Databasedotcom::Sobject::Sobject do
     end
     
     describe ".find_or_create" do
+      it "queries for a record" do
+        @client.should_receive(:query) do |query|
+          query.should start_with("SELECT #{@field_names.join(',')} FROM TestClass WHERE")
+          query.should include("Name = 'Richard'")
+          query.should include("Email_Field = 'foo@bar.com'")
+          query.should include("IsDeleted = false")
+          query.scan(" AND ").should have(2).items
+          query.should end_with("ORDER BY Id ASC LIMIT 1")
+          
+          stub.as_null_object
+        end.once
+        
+        TestClass.find_or_create("Name" => 'Richard', "Email_Field" => "foo@bar.com", "IsDeleted" => false)
+      end
+      
       context "when the query returns a record" do
+        before { @client.stub(:query).and_return(["gar"]) }
+        
         it "returns the record" do
-          @client.should_receive(:query).with("SELECT #{@field_names.join(',')} FROM TestClass WHERE Name = 'Richard' AND Email_Field = 'foo@bar.com' AND IsDeleted = false ORDER BY Id ASC LIMIT 1").and_return(['gar'])
           TestClass.find_or_create("Name" => 'Richard', "Email_Field" => "foo@bar.com", "IsDeleted" => false).should == "gar"
         end
       end
       
       context "when the query returns an empty set" do
+        before { @client.stub(:query).and_return([]) }
+        
         it "creates the record with the attributes and returns the record" do
-          @client.should_receive(:query).with("SELECT #{@field_names.join(',')} FROM TestClass WHERE Name = 'Richard' AND Email_Field = 'foo@bar.com' AND IsDeleted = false ORDER BY Id ASC LIMIT 1").and_return([])
           @client.should_receive(:create).with(TestClass, "Name" => "Richard", "Email_Field" => "foo@bar.com", "IsDeleted" => false).and_return("gar")
           TestClass.find_or_create("Name" => 'Richard', "Email_Field" => "foo@bar.com", "IsDeleted" => false).should == "gar"
         end
