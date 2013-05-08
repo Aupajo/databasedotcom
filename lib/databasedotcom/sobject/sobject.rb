@@ -311,6 +311,12 @@ module Databasedotcom
       def self.create(object_attributes)
         self.client.create(self, object_attributes)
       end
+      
+      # Searches for a Sobject matching the all attributes in +object_attributes+. If
+      # no record is found, one is created
+      def self.find_or_create(object_attributes)
+        self.first(soql_conditions_for(object_attributes)) || self.create(object_attributes)
+      end
 
       # Coerce values submitted from a Rails form to the values expected by the database
       # returns a new hash with updated values

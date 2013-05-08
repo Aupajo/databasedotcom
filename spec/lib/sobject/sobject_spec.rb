@@ -139,6 +139,23 @@ describe Databasedotcom::Sobject::Sobject do
         TestClass.create("moo").should == "gar"
       end
     end
+    
+    describe ".find_or_create" do
+      context "when the query returns a record" do
+        it "returns the record" do
+          @client.should_receive(:query).with("SELECT #{@field_names.join(',')} FROM TestClass WHERE Name = 'Richard' AND Email_Field = 'foo@bar.com' AND IsDeleted = false ORDER BY Id ASC LIMIT 1").and_return(['gar'])
+          TestClass.find_or_create("Name" => 'Richard', "Email_Field" => "foo@bar.com", "IsDeleted" => false).should == "gar"
+        end
+      end
+      
+      context "when the query returns an empty set" do
+        it "creates the record with the attributes and returns the record" do
+          @client.should_receive(:query).with("SELECT #{@field_names.join(',')} FROM TestClass WHERE Name = 'Richard' AND Email_Field = 'foo@bar.com' AND IsDeleted = false ORDER BY Id ASC LIMIT 1").and_return([])
+          @client.should_receive(:create).with(TestClass, "Name" => "Richard", "Email_Field" => "foo@bar.com", "IsDeleted" => false).and_return("gar")
+          TestClass.find_or_create("Name" => 'Richard', "Email_Field" => "foo@bar.com", "IsDeleted" => false).should == "gar"
+        end
+      end
+    end
 
     describe ".find" do
       context "with a valid id" do
